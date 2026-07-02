@@ -1,13 +1,39 @@
-export type TaskCategory =
-  | "Math"
-  | "English"
-  | "Chinese"
-  | "Reading"
-  | "Sport"
-  | "Programming"
-  | "Music"
-  | "Art"
-  | "Other";
+export const TASK_CATEGORIES = [
+  "Math",
+  "English",
+  "Chinese",
+  "Reading",
+  "Sport",
+  "Programming",
+  "Music",
+  "Art",
+  "Other",
+] as const;
+
+export type TaskCategory = typeof TASK_CATEGORIES[number];
+
+export const TASK_TYPES = [
+  "Reading",
+  "Writing",
+  "Worksheet",
+  "Exercise",
+  "Practice",
+  "Project",
+  "Video",
+  "Quiz",
+  "Review",
+  "Other",
+] as const;
+
+export type TaskType = typeof TASK_TYPES[number];
+
+export const TASK_DIFFICULTIES = [
+  1,
+  2,
+  3,
+] as const;
+
+export type TaskDifficulty = typeof TASK_DIFFICULTIES[number];
 
 export interface Task {
   id: string;
@@ -16,7 +42,15 @@ export interface Task {
 
   category: TaskCategory;
 
+  type: TaskType;
+
   durationMinutes: number;
 
+  difficulty: TaskDifficulty;
+
   required: boolean;
+
+  completed: boolean;
+
+  note: string;
 }

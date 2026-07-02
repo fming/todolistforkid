@@ -1,53 +1,91 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { useState } from "react";
 
 interface ToolbarProps {
   date: string;
+  onSave?: () => void;
+  onLoadTemplate?: (template: string) => void;
+  onCopyYesterday?: () => void;
 }
 
-export default function Toolbar({ date }: ToolbarProps) {
-  return (
-    <div className="mb-6 rounded-xl border bg-white p-6 shadow-sm">
-      <div className="grid gap-6 md:grid-cols-2">
-        <div>
-          <label className="mb-2 block text-sm font-medium text-slate-700">
-            Date
-          </label>
+export default function Toolbar({
+  date,
+  onSave,
+  onLoadTemplate,
+  onCopyYesterday,
+}: ToolbarProps) {
+  const [template, setTemplate] = useState("Summer Weekday");
 
-          <input
-            type="date"
-            value={date}
-            readOnly
-            className="w-full rounded-md border border-slate-300 bg-white px-3 py-2"
-          />
+  return (
+    <div className="mb-8 rounded-2xl border bg-white p-6 shadow-sm">
+      {/* Header */}
+      <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h2 className="text-xl font-bold text-slate-900">
+            📅 Today Plan
+          </h2>
+
+          <p className="text-sm text-slate-500">
+            {date}
+          </p>
         </div>
 
-        <div>
-          <label className="mb-2 block text-sm font-medium text-slate-700">
-            Template
-          </label>
+        <div className="flex gap-3">
+          <Button
+            variant="outline"
+            onClick={() => onCopyYesterday?.()}
+          >
+            Copy Yesterday
+          </Button>
 
-          <select className="w-full rounded-md border border-slate-300 bg-white px-3 py-2">
-            <option>Summer Weekday</option>
-            <option>Summer Weekend</option>
-            <option>School Day</option>
-          </select>
+          <Button
+            variant="outline"
+            onClick={() =>
+              onLoadTemplate?.(template)
+            }
+          >
+            Load Template
+          </Button>
+
+          <Button onClick={onSave}>
+            Save Plan
+          </Button>
         </div>
       </div>
 
-      <div className="mt-6 flex gap-3">
-        <Button variant="outline">
-          Load Template
-        </Button>
+      {/* Template selector */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <div>
+          <label className="mb-2 block text-sm text-slate-600">
+            Template
+          </label>
 
-        <Button variant="secondary">
-          Copy Yesterday
-        </Button>
+          <select
+            className="w-full rounded-lg border px-3 py-2"
+            value={template}
+            onChange={(e) =>
+              setTemplate(e.target.value)
+            }
+          >
+            <option value="Summer Weekday">
+              Summer Weekday
+            </option>
 
-        <Button>
-          Save
-        </Button>
+            <option value="Summer Weekend">
+              Summer Weekend
+            </option>
+
+            <option value="School Day">
+              School Day
+            </option>
+          </select>
+        </div>
+
+        <div className="rounded-lg bg-slate-50 p-3 text-sm text-slate-500">
+          💡 Tip: Templates help you generate daily plans in 1 click
+        </div>
       </div>
     </div>
   );

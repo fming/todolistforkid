@@ -1,0 +1,25 @@
+{
+  "name": "Summer Weekday",
+  "tasks": [
+    {
+      "title": "Singapore Math",
+      "category": "Math",
+      "type": "Worksheet",
+      "durationMinutes": 30,
+      "difficulty": 3,
+      "required": true,
+      "completed": false,
+      "note": ""
+    },
+    {
+      "title": "RAZ Reading",
+      "category": "English",
+      "type": "Reading",
+      "durationMinutes": 20,
+      "difficulty": 2,
+      "required": true,
+      "completed": false,
+      "note": ""
+    }
+  ]
+}

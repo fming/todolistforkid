@@ -1,9 +1,10 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
 
+import TaskItem from "@/components/task/TaskItem";
 import type { Task } from "@/types/task";
-import TaskRow from "./TaskRow";
 
 interface TaskListProps {
   tasks: Task[];
@@ -23,73 +24,58 @@ export default function TaskList({
   onDeleteTask,
 }: TaskListProps) {
   return (
-    <div className="rounded-xl border bg-white shadow-sm">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="border-b px-6 py-4">
-        <h2 className="text-lg font-semibold text-slate-900">
-          Today's Tasks
-        </h2>
+      <div className="flex items-start justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-900">
+            Today's Tasks
+          </h2>
 
-        <p className="mt-1 text-sm text-slate-500">
-          Create and edit today's learning tasks.
-        </p>
-      </div>
+          <p className="mt-1 text-sm text-slate-500">
+            Build your daily learning plan.
+          </p>
+        </div>
 
-      {/* Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-slate-50">
-            <tr className="text-sm text-slate-600">
-              <th className="px-4 py-3 text-left">
-                Task
-              </th>
-
-              <th className="px-4 py-3 text-left">
-                Category
-              </th>
-
-              <th className="px-4 py-3 text-center">
-                Minutes
-              </th>
-
-              <th className="px-4 py-3 text-center">
-                Required
-              </th>
-
-              <th className="w-16"></th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {tasks.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={5}
-                  className="py-10 text-center text-slate-400"
-                >
-                  No tasks yet.
-                </td>
-              </tr>
-            ) : (
-              tasks.map((task) => (
-                <TaskRow
-                  key={task.id}
-                  task={task}
-                  onChange={onUpdateTask}
-                  onDelete={onDeleteTask}
-                />
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Footer */}
-      <div className="border-t p-4">
         <Button onClick={onAddTask}>
-          + Add Task
+          <Plus className="mr-2 h-4 w-4" />
+          Add Task
         </Button>
       </div>
+
+      {/* Empty state */}
+      {tasks.length === 0 && (
+        <div className="rounded-2xl border-2 border-dashed bg-white py-16 text-center">
+          <p className="text-slate-500">
+            No tasks yet. Start by adding one.
+          </p>
+
+          <Button className="mt-4" onClick={onAddTask}>
+            <Plus className="mr-2 h-4 w-4" />
+            Create First Task
+          </Button>
+        </div>
+      )}
+
+      {/* Task Cards */}
+      <div className="space-y-5">
+        {tasks.map((task) => (
+          <TaskItem
+            key={task.id}
+            task={task}
+            editable={true}
+            onChange={onUpdateTask}
+            onDelete={onDeleteTask}
+          />
+        ))}
+      </div>
+
+      {/* Footer hint */}
+      {tasks.length > 0 && (
+        <div className="text-center text-xs text-slate-400">
+          Tip: Keep total difficulty balanced across the day
+        </div>
+      )}
     </div>
   );
 }

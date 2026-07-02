@@ -4,6 +4,15 @@ import { useState } from "react";
 import { Trash2, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export interface Task {
   id: string;
@@ -101,8 +110,7 @@ export default function TaskTable() {
                   className="border-t transition-colors hover:bg-slate-50"
                 >
                   <td className="px-4 py-3">
-                    <input
-                      className="flex h-9 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-blue-500"
+                    <Input
                       value={task.title}
                       placeholder="Task name..."
                       onChange={(e) =>
@@ -112,24 +120,29 @@ export default function TaskTable() {
                   </td>
 
                   <td className="px-4 py-3 w-56">
-                    <select
-                      className="flex h-9 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-blue-500"
+                    <Select
                       value={task.category}
-                      onChange={(e) =>
-                        updateTask(task.id, "category", e.target.value)
+                      onValueChange={(value) =>
+                        updateTask(task.id, "category", value)
                       }
                     >
-                      {CATEGORIES.map((c) => (
-                        <option key={c} value={c}>
-                          {c}
-                        </option>
-                      ))}
-                    </select>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+
+                      <SelectContent>
+                        {CATEGORIES.map((c) => (
+                          <SelectItem key={c} value={c}>
+                            {c}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </td>
 
                   <td className="px-4 py-3">
-                    <input
-                      className="flex h-9 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-center text-sm outline-none transition focus:border-blue-500"
+                    <Input
+                      className="text-center"
                       type="number"
                       value={task.durationMinutes}
                       onChange={(e) =>
@@ -143,12 +156,10 @@ export default function TaskTable() {
                   </td>
 
                   <td className="text-center">
-                    <input
-                      className="h-4 w-4 rounded border-slate-300"
-                      type="checkbox"
+                    <Checkbox
                       checked={task.required}
-                      onChange={(e) =>
-                        updateTask(task.id, "required", e.target.checked)
+                      onCheckedChange={(checked) =>
+                        updateTask(task.id, "required", checked === true)
                       }
                     />
                   </td>

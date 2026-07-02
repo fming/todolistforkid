@@ -1,0 +1,25 @@
+{
+  "name": "Summer Weekend",
+  "tasks": [
+    {
+      "title": "Coding Practice",
+      "category": "Programming",
+      "type": "Practice",
+      "durationMinutes": 60,
+      "difficulty": 3,
+      "required": false,
+      "completed": false,
+      "note": ""
+    },
+    {
+      "title": "Outdoor Sport",
+      "category": "Sport",
+      "type": "Exercise",
+      "durationMinutes": 45,
+      "difficulty": 2,
+      "required": false,
+      "completed": false,
+      "note": ""
+    }
+  ]
+}
