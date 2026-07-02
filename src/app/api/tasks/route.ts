@@ -1,4 +1,4 @@
-import { readData, writeData } from "@/lib/storage";
+import { readData, writeData } from "@/storage/JsonStorage";
 
 // 获取今日任务
 export async function GET(req: Request) {

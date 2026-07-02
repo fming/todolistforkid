@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 
-const filePath = path.join(process.cwd(), "data/tasks.json");
+const filePath = path.join(process.cwd(), "data/task.json");
 
 export function readData() {
   const raw = fs.readFileSync(filePath, "utf-8");
