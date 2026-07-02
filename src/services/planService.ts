@@ -1,4 +1,4 @@
-import { listFiles, readJSON, writeJSON } from "@/lib/storage";
+import { deleteFile, listFiles, readJSON, writeJSON } from "@/lib/storage";
 import type { DayPlan, PlanStatus } from "@/types/day-plan";
 import type { Task } from "@/types/task";
 
@@ -129,4 +129,14 @@ export async function getYesterdayTasks(date: string): Promise<Task[] | null> {
   if (!plan) return null;
 
   return plan.tasks.map((t) => ({ ...t, completed: false }));
+}
+
+/**
+ * Delete every plan file. Used by admin "Clear all history".
+ */
+export async function clearAllPlans(): Promise<number> {
+  const files = await listFiles(PLANS_DIR);
+  const targets = files.filter((f) => f.endsWith(".json"));
+  await Promise.all(targets.map((f) => deleteFile(`${PLANS_DIR}/${f}`)));
+  return targets.length;
 }

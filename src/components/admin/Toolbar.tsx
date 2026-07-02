@@ -1,11 +1,7 @@
 "use client";
 
-import { useState } from "react";
-
 import { Button } from "@/components/ui/button";
 import type { PlanStatus } from "@/types/day-plan";
-
-export type TemplateKey = "weekday" | "weekend";
 
 interface ToolbarProps {
   date: string;
@@ -14,7 +10,8 @@ interface ToolbarProps {
   onSave: () => void;
   onPublish: () => void;
   onUnpublish: () => void;
-  onLoadTemplate: (name: TemplateKey) => void;
+  onLoadTemplate: () => void;
+  onSaveAsTemplate: () => void;
   onCopyYesterday: () => void;
 }
 
@@ -44,16 +41,15 @@ export default function Toolbar({
   onPublish,
   onUnpublish,
   onLoadTemplate,
+  onSaveAsTemplate,
   onCopyYesterday,
 }: ToolbarProps) {
-  const [template, setTemplate] = useState<TemplateKey>("weekday");
-
   const badge = STATUS_STYLES[status];
   const isPublished = status === "published";
 
   return (
     <div className="mb-8 rounded-2xl border bg-white p-6 shadow-sm">
-      <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <div className="flex items-center gap-3">
             <h2 className="text-xl font-bold text-slate-900">📅 Today Plan</h2>
@@ -78,11 +74,11 @@ export default function Toolbar({
           <Button variant="outline" onClick={onCopyYesterday}>
             Copy Yesterday
           </Button>
-          <Button
-            variant="outline"
-            onClick={() => onLoadTemplate(template)}
-          >
+          <Button variant="outline" onClick={onLoadTemplate}>
             Load Template
+          </Button>
+          <Button variant="outline" onClick={onSaveAsTemplate}>
+            Save as Template
           </Button>
           <Button variant="outline" onClick={onSave}>
             Save Draft
@@ -105,23 +101,9 @@ export default function Toolbar({
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <div>
-          <label className="mb-2 block text-sm text-slate-600">Template</label>
-          <select
-            className="w-full rounded-lg border px-3 py-2"
-            value={template}
-            onChange={(e) => setTemplate(e.target.value as TemplateKey)}
-          >
-            <option value="weekday">Summer Weekday</option>
-            <option value="weekend">Summer Weekend</option>
-          </select>
-        </div>
-
-        <div className="rounded-lg bg-slate-50 p-3 text-sm text-slate-500">
-          💡 Save keeps it as a draft. Publish makes it visible to the kid view.
-        </div>
-      </div>
+      <p className="mt-4 rounded-lg bg-slate-50 p-3 text-sm text-slate-500">
+        💡 Save keeps it as a draft. Publish makes it visible to the kid view.
+      </p>
     </div>
   );
 }

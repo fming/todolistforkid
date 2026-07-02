@@ -58,3 +58,15 @@ export async function listFiles(dir: string): Promise<string[]> {
     return [];
   }
 }
+
+/**
+ * 删除文件；不存在时静默返回。
+ */
+export async function deleteFile(filePath: string): Promise<void> {
+  try {
+    const fullPath = path.join(DATA_DIR, filePath);
+    await fs.unlink(fullPath);
+  } catch {
+    // ignore
+  }
+}
