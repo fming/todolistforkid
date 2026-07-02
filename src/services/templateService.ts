@@ -1,11 +1,11 @@
-import { readJSON, writeJSON } from "@/lib/storage";
+import { redis } from "@/lib/redis";
 import type { Task } from "@/types/task";
 
-const TEMPLATE_PATH = "templates/default.json";
+const TEMPLATE_KEY = "template:default";
 
 /**
- * A template task is a `Task` without the runtime bits (`id`, `completed`).
- * These are stripped on save and reapplied on load.
+ * A template task is a `Task` without runtime bits (`id`, `completed`).
+ * Stripped on save and reapplied on load.
  */
 export type TemplateTask = Omit<Task, "id" | "completed">;
 
@@ -20,8 +20,8 @@ const EMPTY_TEMPLATE: Template = {
 };
 
 export async function loadDefaultTemplate(): Promise<Template> {
-  const raw = await readJSON<{ name?: string; tasks?: TemplateTask[] }>(
-    TEMPLATE_PATH
+  const raw = await redis.get<{ name?: string; tasks?: TemplateTask[] }>(
+    TEMPLATE_KEY
   );
   if (!raw) return EMPTY_TEMPLATE;
 
@@ -31,10 +31,6 @@ export async function loadDefaultTemplate(): Promise<Template> {
   };
 }
 
-/**
- * Persist a template. Runtime fields (`id`, `completed`) are stripped so the
- * template file stays a pristine blueprint.
- */
 export async function saveDefaultTemplate(
   tasks: Task[],
   name?: string
@@ -50,13 +46,13 @@ export async function saveDefaultTemplate(
     tasks: cleaned,
   };
 
-  await writeJSON(TEMPLATE_PATH, template);
+  await redis.set(TEMPLATE_KEY, template);
   return template;
 }
 
 /**
  * Turn a template into concrete tasks with fresh UUIDs. Runs server-side, so
- * `crypto.randomUUID()` is safe to call directly.
+ * `crypto.randomUUID()` is safe.
  */
 export function instantiateTemplate(template: Template): Task[] {
   return template.tasks.map((t) => ({
