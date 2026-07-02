@@ -46,3 +46,15 @@ export async function fileExists(filePath: string): Promise<boolean> {
     return false;
   }
 }
+
+/**
+ * 列出目录下的文件名（相对 DATA_DIR）。目录不存在时返回空数组。
+ */
+export async function listFiles(dir: string): Promise<string[]> {
+  try {
+    const fullPath = path.join(DATA_DIR, dir);
+    return await fs.readdir(fullPath);
+  } catch {
+    return [];
+  }
+}
