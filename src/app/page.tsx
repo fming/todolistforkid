@@ -1,15 +1,25 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import KidTaskGrid from "@/components/task/KidTaskGrid";
 import { todayInBeijing } from "@/lib/date";
+import {
+  ALL_DONE,
+  randomEncouragement,
+  type Encouragement,
+} from "@/lib/encouragements";
 import type { DayPlan } from "@/types/day-plan";
 import type { Task } from "@/types/task";
 
 type PlanResponse =
   | DayPlan
   | { date: string; status: "empty"; tasks: Task[] };
+
+type Toast =
+  | { kind: "cheer"; payload: Encouragement }
+  | { kind: "trophy"; payload: Encouragement }
+  | { kind: "error"; message: string };
 
 function formatFriendlyDate(iso: string): string {
   const d = new Date(`${iso}T00:00:00+08:00`);
@@ -27,7 +37,14 @@ export default function KidHome() {
   const [status, setStatus] = useState<"empty" | "published" | "loading">(
     "loading"
   );
-  const [toast, setToast] = useState<string | null>(null);
+  const [toast, setToast] = useState<Toast | null>(null);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showToast = useCallback((next: Toast, durationMs: number) => {
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    setToast(next);
+    toastTimer.current = setTimeout(() => setToast(null), durationMs);
+  }, []);
 
   const load = useCallback(async () => {
     setStatus("loading");
@@ -55,8 +72,12 @@ export default function KidHome() {
 
   async function handleToggle(id: string, completed: boolean) {
     const prev = tasks;
+    const wasJustCompleted =
+      completed && !prev.find((t) => t.id === id)?.completed;
+
     // Optimistic update.
-    setTasks((ts) => ts.map((t) => (t.id === id ? { ...t, completed } : t)));
+    const next = prev.map((t) => (t.id === id ? { ...t, completed } : t));
+    setTasks(next);
 
     try {
       const res = await fetch("/api/plan", {
@@ -65,10 +86,21 @@ export default function KidHome() {
         body: JSON.stringify({ date, id, completed }),
       });
       if (!res.ok) throw new Error();
+
+      if (wasJustCompleted) {
+        const allDone = next.length > 0 && next.every((t) => t.completed);
+        if (allDone) {
+          showToast({ kind: "trophy", payload: ALL_DONE }, 4500);
+        } else {
+          showToast(
+            { kind: "cheer", payload: randomEncouragement() },
+            2800
+          );
+        }
+      }
     } catch {
       setTasks(prev);
-      setToast("Couldn't save that — try again.");
-      setTimeout(() => setToast(null), 2500);
+      showToast({ kind: "error", message: "Couldn't save that — try again." }, 2500);
     }
   }
 
@@ -121,9 +153,40 @@ export default function KidHome() {
           <KidTaskGrid tasks={tasks} onToggle={handleToggle} />
         )}
 
-        {toast && (
+        {toast?.kind === "cheer" && (
+          <div
+            key={`cheer-${toast.payload.en}`}
+            className="fixed bottom-8 left-1/2 -translate-x-1/2 animate-[fadeInUp_.25s_ease-out] rounded-2xl bg-white/95 px-5 py-3 text-center shadow-xl ring-1 ring-emerald-200 backdrop-blur"
+          >
+            <p className="text-base font-semibold text-slate-800">
+              <span className="mr-1">{toast.payload.emoji}</span>
+              {toast.payload.zh ?? toast.payload.en}
+            </p>
+            {toast.payload.zh && (
+              <p className="mt-0.5 text-xs italic text-slate-500">
+                {toast.payload.en}
+              </p>
+            )}
+          </div>
+        )}
+
+        {toast?.kind === "trophy" && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-6">
+            <div className="animate-[popIn_.35s_ease-out] rounded-3xl bg-gradient-to-br from-amber-100 via-white to-emerald-100 px-8 py-8 text-center shadow-2xl ring-1 ring-amber-200">
+              <p className="text-5xl">{toast.payload.emoji}</p>
+              <p className="mt-3 text-2xl font-bold text-slate-900">
+                {toast.payload.zh}
+              </p>
+              <p className="mt-1 text-base italic text-slate-600">
+                {toast.payload.en}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {toast?.kind === "error" && (
           <div className="fixed bottom-6 left-1/2 -translate-x-1/2 rounded-full bg-slate-900 px-4 py-2 text-sm text-white shadow-lg">
-            {toast}
+            {toast.message}
           </div>
         )}
       </div>
