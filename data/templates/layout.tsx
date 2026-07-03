@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "方芷悦逆袭记 · 小学霸任务打卡",
+  title: "方芷悦逆袭记",
   description: "每天的学习任务，家长安排，小学霸打卡完成。千里之行，始于足下。",
 };
 
