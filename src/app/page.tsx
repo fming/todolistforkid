@@ -90,11 +90,11 @@ export default function KidHome() {
       if (wasJustCompleted) {
         const allDone = next.length > 0 && next.every((t) => t.completed);
         if (allDone) {
-          showToast({ kind: "trophy", payload: ALL_DONE }, 4500);
+          showToast({ kind: "trophy", payload: ALL_DONE }, 8000);
         } else {
           showToast(
             { kind: "cheer", payload: randomEncouragement() },
-            2800
+            5000
           );
         }
       }
@@ -154,34 +154,46 @@ export default function KidHome() {
         )}
 
         {toast?.kind === "cheer" && (
-          <div
+          <button
             key={`cheer-${toast.payload.en}`}
-            className="fixed bottom-8 left-1/2 -translate-x-1/2 animate-[fadeInUp_.25s_ease-out] rounded-2xl bg-white/95 px-5 py-3 text-center shadow-xl ring-1 ring-emerald-200 backdrop-blur"
+            type="button"
+            onClick={() => setToast(null)}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/25 px-6 focus:outline-none"
+            aria-label="Dismiss"
           >
-            <p className="text-base font-semibold text-slate-800">
-              <span className="mr-1">{toast.payload.emoji}</span>
-              {toast.payload.zh ?? toast.payload.en}
-            </p>
-            {toast.payload.zh && (
-              <p className="mt-0.5 text-xs italic text-slate-500">
-                {toast.payload.en}
+            <div className="animate-[popIn_.35s_ease-out] max-w-lg rounded-3xl bg-gradient-to-br from-emerald-50 via-white to-sky-50 px-10 py-8 text-center shadow-2xl ring-2 ring-emerald-200">
+              <p className="text-6xl md:text-7xl">{toast.payload.emoji}</p>
+              <p className="mt-4 text-3xl font-bold leading-snug text-slate-900 md:text-4xl">
+                {toast.payload.zh ?? toast.payload.en}
               </p>
-            )}
-          </div>
+              {toast.payload.zh && (
+                <p className="mt-2 text-lg italic text-slate-600 md:text-xl">
+                  {toast.payload.en}
+                </p>
+              )}
+              <p className="mt-4 text-xs text-slate-400">tap to close</p>
+            </div>
+          </button>
         )}
 
         {toast?.kind === "trophy" && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-6">
-            <div className="animate-[popIn_.35s_ease-out] rounded-3xl bg-gradient-to-br from-amber-100 via-white to-emerald-100 px-8 py-8 text-center shadow-2xl ring-1 ring-amber-200">
-              <p className="text-5xl">{toast.payload.emoji}</p>
-              <p className="mt-3 text-2xl font-bold text-slate-900">
+          <button
+            type="button"
+            onClick={() => setToast(null)}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-6 focus:outline-none"
+            aria-label="Dismiss"
+          >
+            <div className="animate-[popIn_.35s_ease-out] max-w-xl rounded-3xl bg-gradient-to-br from-amber-100 via-white to-emerald-100 px-12 py-10 text-center shadow-2xl ring-2 ring-amber-300">
+              <p className="text-7xl md:text-8xl">{toast.payload.emoji}</p>
+              <p className="mt-4 text-4xl font-bold text-slate-900 md:text-5xl">
                 {toast.payload.zh}
               </p>
-              <p className="mt-1 text-base italic text-slate-600">
+              <p className="mt-2 text-xl italic text-slate-600 md:text-2xl">
                 {toast.payload.en}
               </p>
+              <p className="mt-5 text-xs text-slate-500">tap to close</p>
             </div>
-          </div>
+          </button>
         )}
 
         {toast?.kind === "error" && (
