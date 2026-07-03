@@ -8,22 +8,18 @@ import StatusBanner, {
   type BannerState,
 } from "@/components/admin/StatusBanner";
 import { TASK_CATEGORIES, CATEGORY_EMOJI } from "@/lib/constants";
+import { shiftIsoDate, todayInBeijing } from "@/lib/date";
 import {
   applyFilter,
   computeSummary,
   flattenPlans,
-  shiftIsoDate,
   type HistoryFilter,
 } from "@/lib/history-filter";
 import type { DayPlan } from "@/types/day-plan";
 import type { TaskCategory } from "@/types/task";
 
-function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
 const DEFAULT_FILTER = (): HistoryFilter => {
-  const today = todayIso();
+  const today = todayInBeijing();
   return {
     from: shiftIsoDate(today, -30),
     to: today,

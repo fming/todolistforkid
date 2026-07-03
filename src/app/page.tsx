@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import KidTaskGrid from "@/components/task/KidTaskGrid";
+import { todayInBeijing } from "@/lib/date";
 import type { DayPlan } from "@/types/day-plan";
 import type { Task } from "@/types/task";
 
@@ -10,13 +11,10 @@ type PlanResponse =
   | DayPlan
   | { date: string; status: "empty"; tasks: Task[] };
 
-function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
 function formatFriendlyDate(iso: string): string {
-  const d = new Date(`${iso}T00:00:00`);
-  return d.toLocaleDateString(undefined, {
+  const d = new Date(`${iso}T00:00:00+08:00`);
+  return d.toLocaleDateString("zh-CN", {
+    timeZone: "Asia/Shanghai",
     weekday: "long",
     month: "long",
     day: "numeric",
@@ -24,7 +22,7 @@ function formatFriendlyDate(iso: string): string {
 }
 
 export default function KidHome() {
-  const [date] = useState(todayIso);
+  const [date] = useState(todayInBeijing);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [status, setStatus] = useState<"empty" | "published" | "loading">(
     "loading"
@@ -80,7 +78,7 @@ export default function KidHome() {
         <header className="mb-6 flex items-start justify-between gap-6">
           <div>
             <p className="text-sm text-slate-500">
-              {formatFriendlyDate(date)}
+              Beijing Time: {formatFriendlyDate(date)}
             </p>
             <h1 className="mt-1 text-4xl font-bold text-slate-900">
               🌞 Today&apos;s Tasks

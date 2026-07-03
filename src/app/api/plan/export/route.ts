@@ -1,4 +1,5 @@
 import { listPlans } from "@/services/planService";
+import { todayInBeijing } from "@/lib/date";
 
 /**
  * GET /api/plan/export — download every plan (drafts + published) as a
@@ -12,7 +13,7 @@ export async function GET() {
     plans,
   };
 
-  const filename = `planner-backup-${new Date().toISOString().slice(0, 10)}.json`;
+  const filename = `planner-backup-${todayInBeijing()}.json`;
 
   return new Response(JSON.stringify(body, null, 2), {
     headers: {

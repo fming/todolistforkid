@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { formatBeijingTime } from "@/lib/date";
 import type { PlanStatus } from "@/types/day-plan";
 
 interface ToolbarProps {
@@ -61,10 +62,10 @@ export default function Toolbar({
           </div>
 
           <p className="mt-1 text-sm text-slate-500">
-            {date}
+            Beijing Time: {date}
             {isPublished && publishedAt && (
               <span className="ml-2 text-slate-400">
-                · published {new Date(publishedAt).toLocaleTimeString()}
+                · published {formatBeijingTime(publishedAt)}
               </span>
             )}
           </p>

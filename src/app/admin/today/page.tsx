@@ -10,12 +10,9 @@ import TaskList from "@/components/admin/TaskList";
 import Toolbar from "@/components/admin/Toolbar";
 
 import { DEFAULT_TASK } from "@/lib/constants";
+import { shiftIsoDate, todayInBeijing } from "@/lib/date";
 import type { DayPlan, PlanStatus } from "@/types/day-plan";
 import type { Task } from "@/types/task";
-
-function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
-}
 
 function emptyPlan(date: string): DayPlan {
   return {
@@ -27,7 +24,7 @@ function emptyPlan(date: string): DayPlan {
 }
 
 export default function TodayPage() {
-  const [date] = useState(todayIso);
+  const [date] = useState(todayInBeijing);
   const [plan, setPlan] = useState<DayPlan>(() => emptyPlan(date));
   const [loading, setLoading] = useState(true);
   const [banner, setBanner] = useState<BannerState | null>(null);
@@ -152,9 +149,7 @@ export default function TodayPage() {
   }
 
   async function handleCopyYesterday() {
-    const d = new Date(`${plan.date}T00:00:00`);
-    d.setDate(d.getDate() - 1);
-    const yesterday = d.toISOString().slice(0, 10);
+    const yesterday = shiftIsoDate(plan.date, -1);
 
     try {
       const res = await fetch(`/api/plan?date=${yesterday}&draft=1`);

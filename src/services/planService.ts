@@ -1,4 +1,5 @@
 import { redis, scanKeys } from "@/lib/redis";
+import { shiftIsoDate } from "@/lib/date";
 import type { DayPlan, PlanStatus } from "@/types/day-plan";
 import type { Task } from "@/types/task";
 
@@ -118,9 +119,7 @@ export async function listPlans(
  * completion state so the caller doesn't have to reset them.
  */
 export async function getYesterdayTasks(date: string): Promise<Task[] | null> {
-  const d = new Date(`${date}T00:00:00`);
-  d.setDate(d.getDate() - 1);
-  const yesterday = d.toISOString().slice(0, 10);
+  const yesterday = shiftIsoDate(date, -1);
 
   const plan = await getPlan(yesterday, { includeDraft: true });
   if (!plan) return null;
