@@ -13,7 +13,7 @@ interface ToolbarProps {
   onUnpublish: () => void;
   onLoadTemplate: () => void;
   onSaveAsTemplate: () => void;
-  onCopyYesterday: () => void;
+  onCopyLastTime: () => void;
 }
 
 const STATUS_STYLES: Record<
@@ -43,7 +43,7 @@ export default function Toolbar({
   onUnpublish,
   onLoadTemplate,
   onSaveAsTemplate,
-  onCopyYesterday,
+  onCopyLastTime,
 }: ToolbarProps) {
   const badge = STATUS_STYLES[status];
   const isPublished = status === "published";
@@ -72,8 +72,8 @@ export default function Toolbar({
         </div>
 
         <div className="flex flex-wrap gap-3">
-          <Button variant="outline" onClick={onCopyYesterday}>
-            Copy Yesterday
+          <Button variant="outline" onClick={onCopyLastTime}>
+            Copy Last Time
           </Button>
           <Button variant="outline" onClick={onLoadTemplate}>
             Load Template

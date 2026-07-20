@@ -11,7 +11,7 @@ import TaskList from "@/components/admin/TaskList";
 import Toolbar from "@/components/admin/Toolbar";
 
 import { DEFAULT_TASK } from "@/lib/constants";
-import { shiftIsoDate, todayInBeijing } from "@/lib/date";
+import { todayInBeijing } from "@/lib/date";
 import type { DayPlan, PlanStatus } from "@/types/day-plan";
 import type { Task } from "@/types/task";
 
@@ -149,29 +149,34 @@ export default function TodayPage() {
     }
   }
 
-  async function handleCopyYesterday() {
-    const yesterday = shiftIsoDate(plan.date, -1);
-
+  async function handleCopyLastTime() {
     try {
-      const res = await fetch(`/api/plan?date=${yesterday}&draft=1`);
-      const data = (await res.json()) as
-        | DayPlan
-        | { date: string; status: "empty"; tasks: Task[] };
+      const res = await fetch("/api/plan/history");
+      if (!res.ok) throw new Error();
+      const plans = (await res.json()) as DayPlan[];
 
-      if (!("tasks" in data) || data.tasks.length === 0) {
-        notify("info", "No plan for yesterday to copy.");
+      // History is newest-first. Skip today (or any date >= today) so we grab
+      // the most recent *previous* published plan.
+      const previous = plans.find((p) => p.date < plan.date && p.tasks.length > 0);
+
+      if (!previous) {
+        notify("info", "No previous plan to copy.");
         return;
       }
 
-      const cloned: Task[] = data.tasks.map((t) => ({
+      const cloned: Task[] = previous.tasks.map((t) => ({
         ...t,
         id: crypto.randomUUID(),
+        status: "todo",
         completed: false,
+        submittedAt: undefined,
+        verifiedAt: undefined,
+        adminComment: undefined,
       }));
       setPlan((prev) => ({ ...prev, status: "draft", tasks: cloned }));
-      notify("info", `Copied ${cloned.length} tasks from ${yesterday}.`);
+      notify("info", `Copied ${cloned.length} tasks from ${previous.date}.`);
     } catch {
-      notify("error", "Copy Yesterday failed.");
+      notify("error", "Copy Last Time failed.");
     }
   }
 
@@ -218,7 +223,7 @@ export default function TodayPage() {
         onUnpublish={handleUnpublish}
         onLoadTemplate={handleLoadTemplate}
         onSaveAsTemplate={handleSaveAsTemplate}
-        onCopyYesterday={handleCopyYesterday}
+        onCopyLastTime={handleCopyLastTime}
       />
 
       {plan.status === "published" && (
