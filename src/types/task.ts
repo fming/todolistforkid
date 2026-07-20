@@ -35,6 +35,8 @@ export const TASK_DIFFICULTIES = [
 
 export type TaskDifficulty = typeof TASK_DIFFICULTIES[number];
 
+export type TaskStatus = "todo" | "pending" | "verified";
+
 export interface Task {
   id: string;
 
@@ -50,7 +52,19 @@ export interface Task {
 
   required: boolean;
 
+  /** @deprecated Prefer `status`. Mirrored for legacy readers; = (status === "verified"). */
   completed: boolean;
 
   note: string;
+
+  status: TaskStatus;
+
+  /** ISO timestamp when kid submitted (status: pending). */
+  submittedAt?: string;
+
+  /** ISO timestamp when parent approved (status: verified). */
+  verifiedAt?: string;
+
+  /** Parent's comment attached to the latest approve/reject decision. */
+  adminComment?: string;
 }

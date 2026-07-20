@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+import PendingReviewList from "@/components/admin/PendingReviewList";
 import StatusBanner, {
   type BannerState,
   type BannerKind,
@@ -220,6 +221,17 @@ export default function TodayPage() {
         onCopyYesterday={handleCopyYesterday}
       />
 
+      {plan.status === "published" && (
+        <PendingReviewList
+          plan={plan}
+          onDecided={(updated) => {
+            setPlan(updated);
+            notify("info", "Verification saved.");
+          }}
+          onError={(msg) => notify("error", msg)}
+        />
+      )}
+
       {loading ? (
         <div className="rounded-xl border bg-white p-10 text-center text-slate-500">
           Loading plan...
@@ -227,6 +239,7 @@ export default function TodayPage() {
       ) : (
         <TaskList
           tasks={plan.tasks}
+          showStatus={plan.status === "published"}
           onAddTask={addTask}
           onUpdateTask={updateTask}
           onDeleteTask={deleteTask}

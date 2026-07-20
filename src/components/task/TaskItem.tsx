@@ -5,17 +5,20 @@ import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 import CategorySelect from "./CategorySelect";
 import TaskTypeSelect from "./TaskTypeSelect";
 import DurationSelect from "./DurationSelect";
 import DifficultySelect from "./DifficultySelect";
 
-import type { Task } from "@/types/task";
+import type { Task, TaskStatus } from "@/types/task";
 
 interface TaskItemProps {
   task: Task;
   editable?: boolean;
+  /** When true, show the per-task status pill (only meaningful on published plans). */
+  showStatus?: boolean;
   onChange: <K extends keyof Task>(
     id: string,
     field: K,
@@ -24,12 +27,38 @@ interface TaskItemProps {
   onDelete: (id: string) => void;
 }
 
+function statusOf(task: Task): TaskStatus {
+  return task.status ?? (task.completed ? "verified" : "todo");
+}
+
+const STATUS_BADGE: Record<
+  TaskStatus,
+  { label: string; className: string }
+> = {
+  todo: {
+    label: "◻ To do",
+    className: "bg-slate-100 text-slate-600 ring-slate-200",
+  },
+  pending: {
+    label: "⏳ Waiting review",
+    className: "bg-amber-100 text-amber-800 ring-amber-200",
+  },
+  verified: {
+    label: "✅ Verified",
+    className: "bg-emerald-100 text-emerald-800 ring-emerald-300",
+  },
+};
+
 export default function TaskItem({
   task,
   editable = true,
+  showStatus = false,
   onChange,
   onDelete,
 }: TaskItemProps) {
+  const status = statusOf(task);
+  const badge = STATUS_BADGE[status];
+
   return (
     <div className="rounded-2xl border bg-white p-6 shadow-sm transition hover:shadow-md">
       {/* Header */}
@@ -49,15 +78,27 @@ export default function TaskItem({
           </h3>
         )}
 
-        {editable && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => onDelete(task.id)}
-          >
-            <Trash2 className="h-5 w-5 text-red-500" />
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {showStatus && (
+            <span
+              className={cn(
+                "whitespace-nowrap rounded-full px-3 py-1 text-xs font-medium ring-1",
+                badge.className
+              )}
+            >
+              {badge.label}
+            </span>
+          )}
+          {editable && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => onDelete(task.id)}
+            >
+              <Trash2 className="h-5 w-5 text-red-500" />
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Grid */}
@@ -143,6 +184,32 @@ export default function TaskItem({
         </div>
       </div>
 
+      {/* Details / note */}
+      <div className="mt-5">
+        <label className="mb-2 block text-sm text-slate-600">
+          Details
+        </label>
+        {editable ? (
+          <textarea
+            value={task.note}
+            placeholder="Describe the task (pages, chapter, focus points)..."
+            rows={3}
+            onChange={(e) =>
+              onChange(task.id, "note", e.target.value)
+            }
+            className="w-full resize-y rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
+          />
+        ) : task.note ? (
+          <p className="whitespace-pre-line rounded-md border bg-slate-50 px-3 py-2 text-sm text-slate-700">
+            {task.note}
+          </p>
+        ) : (
+          <p className="rounded-md border bg-slate-50 px-3 py-2 text-sm italic text-slate-400">
+            No details
+          </p>
+        )}
+      </div>
+
       {/* Footer */}
       <div className="mt-5 flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -159,10 +226,10 @@ export default function TaskItem({
           </span>
         </div>
 
-        {!editable && (
-          <span className="text-sm text-slate-400">
-            Completed view mode
-          </span>
+        {showStatus && status === "verified" && task.adminComment && (
+          <p className="ml-3 max-w-md truncate text-xs text-emerald-700">
+            👨‍👩‍👧 {task.adminComment}
+          </p>
         )}
       </div>
     </div>

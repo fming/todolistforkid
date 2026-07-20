@@ -13,6 +13,7 @@ import {
   applyFilter,
   computeSummary,
   flattenPlans,
+  taskStatus,
   type HistoryFilter,
 } from "@/lib/history-filter";
 import type { DayPlan } from "@/types/day-plan";
@@ -165,15 +166,16 @@ export default function HistoryPage() {
               className="w-full rounded-md border px-2 py-1.5"
             >
               <option value="all">All</option>
-              <option value="done">Done</option>
-              <option value="notDone">Not done</option>
+              <option value="verified">✅ Verified</option>
+              <option value="pending">⏳ Pending</option>
+              <option value="todo">◻ To do</option>
             </select>
           </label>
           <label className="text-sm">
             <span className="mb-1 block text-xs text-slate-500">Keyword</span>
             <input
               type="text"
-              placeholder="Search title / note"
+              placeholder="Search title / note / comment"
               value={filter.keyword}
               onChange={(e) => update("keyword", e.target.value)}
               className="w-full rounded-md border px-2 py-1.5"
@@ -273,38 +275,52 @@ export default function HistoryPage() {
               </tr>
             </thead>
             <tbody>
-              {rows.map((row) => (
-                <tr
-                  key={`${row.date}-${row.task.id}`}
-                  className="border-t border-slate-100"
-                >
-                  <td className="px-4 py-2 text-slate-500">{row.date}</td>
-                  <td className="px-4 py-2 font-medium text-slate-800">
-                    {row.task.title || "Untitled"}
-                  </td>
-                  <td className="px-4 py-2 text-slate-600">
-                    {CATEGORY_EMOJI[row.task.category]} {row.task.category}
-                  </td>
-                  <td className="px-4 py-2 text-slate-600">{row.task.type}</td>
-                  <td className="px-4 py-2 text-slate-600">
-                    {row.task.durationMinutes} min
-                  </td>
-                  <td className="px-4 py-2 text-slate-600">
-                    {"⭐".repeat(row.task.difficulty)}
-                  </td>
-                  <td className="px-4 py-2">
-                    {row.task.completed ? (
-                      <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-800">
-                        ✅ Done
-                      </span>
-                    ) : (
-                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
-                        ⬜ Pending
-                      </span>
-                    )}
-                  </td>
-                </tr>
-              ))}
+              {rows.map((row) => {
+                const s = taskStatus(row.task);
+                return (
+                  <tr
+                    key={`${row.date}-${row.task.id}`}
+                    className="border-t border-slate-100"
+                  >
+                    <td className="px-4 py-2 align-top text-slate-500">{row.date}</td>
+                    <td className="px-4 py-2 align-top font-medium text-slate-800">
+                      {row.task.title || "Untitled"}
+                      {row.task.adminComment && (
+                        <p className="mt-1 text-xs italic text-slate-500">
+                          👨‍👩‍👧 {row.task.adminComment}
+                        </p>
+                      )}
+                    </td>
+                    <td className="px-4 py-2 align-top text-slate-600">
+                      {CATEGORY_EMOJI[row.task.category]} {row.task.category}
+                    </td>
+                    <td className="px-4 py-2 align-top text-slate-600">{row.task.type}</td>
+                    <td className="px-4 py-2 align-top text-slate-600">
+                      {row.task.durationMinutes} min
+                    </td>
+                    <td className="px-4 py-2 align-top text-slate-600">
+                      {"⭐".repeat(row.task.difficulty)}
+                    </td>
+                    <td className="px-4 py-2 align-top">
+                      {s === "verified" && (
+                        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-800">
+                          ✅ Verified
+                        </span>
+                      )}
+                      {s === "pending" && (
+                        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800">
+                          ⏳ Pending
+                        </span>
+                      )}
+                      {s === "todo" && (
+                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
+                          ◻ To do
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}

@@ -8,6 +8,8 @@ import type { Task } from "@/types/task";
 
 interface TaskListProps {
   tasks: Task[];
+  /** When true, show per-task status pill (todo/pending/verified). */
+  showStatus?: boolean;
   onAddTask: () => void;
   onUpdateTask: <K extends keyof Task>(
     id: string,
@@ -19,6 +21,7 @@ interface TaskListProps {
 
 export default function TaskList({
   tasks,
+  showStatus = false,
   onAddTask,
   onUpdateTask,
   onDeleteTask,
@@ -64,6 +67,7 @@ export default function TaskList({
             key={task.id}
             task={task}
             editable={true}
+            showStatus={showStatus}
             onChange={onUpdateTask}
             onDelete={onDeleteTask}
           />

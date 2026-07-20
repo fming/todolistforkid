@@ -4,10 +4,19 @@ import type { Task } from "@/types/task";
 const TEMPLATE_KEY = "template:default";
 
 /**
- * A template task is a `Task` without runtime bits (`id`, `completed`).
- * Stripped on save and reapplied on load.
+ * A template task is a `Task` without any per-instance runtime state
+ * (id, status flags, timestamps, admin comment). Stripped on save and
+ * reapplied on load.
  */
-export type TemplateTask = Omit<Task, "id" | "completed">;
+export type TemplateTask = Omit<
+  Task,
+  | "id"
+  | "completed"
+  | "status"
+  | "submittedAt"
+  | "verifiedAt"
+  | "adminComment"
+>;
 
 export interface Template {
   name: string;
@@ -35,9 +44,23 @@ export async function saveDefaultTemplate(
   tasks: Task[],
   name?: string
 ): Promise<Template> {
-  const cleaned: TemplateTask[] = tasks.map(({ id, completed, ...rest }) => {
-    void id;
-    void completed;
+  const cleaned: TemplateTask[] = tasks.map((t) => {
+    // Strip runtime + legacy fields, keep only template-relevant ones.
+    const {
+      id: _id,
+      completed: _completed,
+      status: _status,
+      submittedAt: _submittedAt,
+      verifiedAt: _verifiedAt,
+      adminComment: _adminComment,
+      ...rest
+    } = t;
+    void _id;
+    void _completed;
+    void _status;
+    void _submittedAt;
+    void _verifiedAt;
+    void _adminComment;
     return rest;
   });
 
@@ -51,13 +74,14 @@ export async function saveDefaultTemplate(
 }
 
 /**
- * Turn a template into concrete tasks with fresh UUIDs. Runs server-side, so
- * `crypto.randomUUID()` is safe.
+ * Turn a template into concrete tasks with fresh UUIDs and a clean todo state.
+ * Runs server-side, so `crypto.randomUUID()` is safe.
  */
 export function instantiateTemplate(template: Template): Task[] {
   return template.tasks.map((t) => ({
     ...t,
     id: crypto.randomUUID(),
+    status: "todo",
     completed: false,
   }));
 }

@@ -29,3 +29,10 @@ export const ALL_DONE: Encouragement = {
   zh: "今日功课，圆满完成！",
   en: "All done for today — amazing!",
 };
+
+/** Small friendly line shown right after kid submits, before parent reviews. */
+export const SUBMITTED_NUDGE: Encouragement = {
+  emoji: "📝",
+  zh: "任务提交啦，等家长检查",
+  en: "Submitted — waiting for parent",
+};

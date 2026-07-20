@@ -3,7 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   getPlan,
   savePlan,
-  updateTaskCompletion,
+  submitTask,
+  cancelSubmission,
 } from "@/services/planService";
 import type { DayPlan } from "@/types/day-plan";
 
@@ -58,25 +59,29 @@ export async function POST(req: NextRequest) {
 }
 
 /**
- * PATCH /api/plan — kid flips one task's completion.
- * Body: { date, id, completed }
+ * PATCH /api/plan — kid submits or cancels a task.
+ * Body: { date, id, action: "submit" | "cancel" }
  */
 export async function PATCH(req: NextRequest) {
   try {
     const body = (await req.json()) as {
       date?: string;
       id?: string;
-      completed?: boolean;
+      action?: "submit" | "cancel";
     };
 
-    if (!body.date || !body.id || typeof body.completed !== "boolean") {
+    if (!body.date || !body.id || (body.action !== "submit" && body.action !== "cancel")) {
       return NextResponse.json({ error: "Invalid body" }, { status: 400 });
     }
 
-    const updated = await updateTaskCompletion(body.date, body.id, body.completed);
+    const updated =
+      body.action === "submit"
+        ? await submitTask(body.date, body.id)
+        : await cancelSubmission(body.date, body.id);
+
     if (!updated) {
       return NextResponse.json(
-        { error: "Plan not published or task not found" },
+        { error: "Plan not published, task not found, or illegal transition" },
         { status: 404 }
       );
     }

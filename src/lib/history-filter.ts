@@ -1,12 +1,12 @@
 import type { DayPlan } from "@/types/day-plan";
-import type { Task, TaskCategory } from "@/types/task";
+import type { Task, TaskCategory, TaskStatus } from "@/types/task";
 
 export interface TaskRow {
   date: string;
   task: Task;
 }
 
-export type StatusFilter = "all" | "done" | "notDone";
+export type StatusFilter = "all" | "verified" | "pending" | "todo";
 
 export interface HistoryFilter {
   from: string;
@@ -31,6 +31,11 @@ export interface HistorySummary {
   }>;
 }
 
+/** Resolve a task's status, falling back to the legacy `completed` boolean. */
+export function taskStatus(task: Task): TaskStatus {
+  return task.status ?? (task.completed ? "verified" : "todo");
+}
+
 /** Flatten plans into one row per task, newest first. */
 export function flattenPlans(plans: DayPlan[]): TaskRow[] {
   const rows: TaskRow[] = [];
@@ -49,10 +54,10 @@ export function applyFilter(rows: TaskRow[], filter: HistoryFilter): TaskRow[] {
     if (filter.to && row.date > filter.to) return false;
     if (filter.category !== "all" && row.task.category !== filter.category)
       return false;
-    if (filter.status === "done" && !row.task.completed) return false;
-    if (filter.status === "notDone" && row.task.completed) return false;
+    if (filter.status !== "all" && taskStatus(row.task) !== filter.status)
+      return false;
     if (kw) {
-      const hay = `${row.task.title} ${row.task.note ?? ""}`.toLowerCase();
+      const hay = `${row.task.title} ${row.task.note ?? ""} ${row.task.adminComment ?? ""}`.toLowerCase();
       if (!hay.includes(kw)) return false;
     }
     return true;
@@ -73,8 +78,9 @@ export function computeSummary(rows: TaskRow[]): HistorySummary {
     days.add(row.date);
 
     const mins = row.task.durationMinutes || 0;
+    const isDone = taskStatus(row.task) === "verified";
     totalMinutes += mins;
-    if (row.task.completed) {
+    if (isDone) {
       doneTasks += 1;
       doneMinutes += mins;
     }
@@ -87,7 +93,7 @@ export function computeSummary(rows: TaskRow[]): HistorySummary {
     };
     entry.total += 1;
     entry.totalMinutes += mins;
-    if (row.task.completed) {
+    if (isDone) {
       entry.done += 1;
       entry.doneMinutes += mins;
     }

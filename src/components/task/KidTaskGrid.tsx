@@ -1,16 +1,17 @@
 "use client";
 
-import KidTaskCard from "./KidTaskCard";
+import KidTaskCard, { type KidAction } from "./KidTaskCard";
 import type { Task } from "@/types/task";
 
 interface KidTaskGridProps {
   tasks: Task[];
-  onToggle: (id: string, completed: boolean) => void | Promise<void>;
+  onAction: (id: string, action: KidAction) => void | Promise<void>;
 }
 
-export default function KidTaskGrid({ tasks, onToggle }: KidTaskGridProps) {
+export default function KidTaskGrid({ tasks, onAction }: KidTaskGridProps) {
   const total = tasks.length;
-  const done = tasks.filter((t) => t.completed).length;
+  const done = tasks.filter((t) => (t.status ?? (t.completed ? "verified" : "todo")) === "verified").length;
+  const pending = tasks.filter((t) => t.status === "pending").length;
   const pct = total > 0 ? Math.round((done / total) * 100) : 0;
 
   return (
@@ -20,7 +21,12 @@ export default function KidTaskGrid({ tasks, onToggle }: KidTaskGridProps) {
           <h2 className="text-2xl font-bold text-slate-900">
             {done} / {total} done
           </h2>
-          <span className="text-sm text-slate-500">{pct}%</span>
+          <span className="text-sm text-slate-500">
+            {pending > 0 && (
+              <span className="mr-3 text-amber-700">⏳ {pending} waiting</span>
+            )}
+            {pct}%
+          </span>
         </div>
         <div className="mt-3 h-3 w-full overflow-hidden rounded-full bg-slate-100">
           <div
@@ -32,7 +38,7 @@ export default function KidTaskGrid({ tasks, onToggle }: KidTaskGridProps) {
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         {tasks.map((task) => (
-          <KidTaskCard key={task.id} task={task} onToggle={onToggle} />
+          <KidTaskCard key={task.id} task={task} onAction={onAction} />
         ))}
       </div>
     </div>
