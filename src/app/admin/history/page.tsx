@@ -284,9 +284,20 @@ export default function HistoryPage() {
                   >
                     <td className="px-4 py-2 align-top text-slate-500">{row.date}</td>
                     <td className="px-4 py-2 align-top font-medium text-slate-800">
-                      {row.task.title || "Untitled"}
+                      <div>{row.task.title || "Untitled"}</div>
+                      {row.task.note && (
+                        <p className="mt-1 whitespace-pre-wrap text-xs font-normal text-slate-600">
+                          📝 {row.task.note}
+                        </p>
+                      )}
                       {row.task.adminComment && (
-                        <p className="mt-1 text-xs italic text-slate-500">
+                        <p
+                          className={`mt-1 whitespace-pre-wrap rounded-md px-2 py-1 text-xs font-normal ${
+                            s === "verified"
+                              ? "bg-emerald-50 text-emerald-800"
+                              : "bg-rose-50 text-rose-800"
+                          }`}
+                        >
                           👨‍👩‍👧 {row.task.adminComment}
                         </p>
                       )}
