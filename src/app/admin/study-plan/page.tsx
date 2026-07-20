@@ -22,7 +22,10 @@ export default function StudyPlanPage() {
   const [loading, setLoading] = useState(true);
   const [banner, setBanner] = useState<BannerState | null>(null);
   const [newSubject, setNewSubject] = useState("");
-  const [preview, setPreview] = useState(true);
+  // Default = preview mode (markdown source hidden). In edit mode we show
+  // textarea + live preview side by side; in preview mode only the rendered
+  // markdown is visible.
+  const [mode, setMode] = useState<"edit" | "preview">("preview");
 
   const notify = useCallback((kind: BannerKind, message: string) => {
     setBanner({ kind, message });
@@ -71,6 +74,8 @@ export default function StudyPlanPage() {
     const plan = plans.find((p) => p.subject === subject);
     setDraft(plan?.content ?? "");
     setDirty(false);
+    // Reset to preview so the markdown source stays hidden when switching.
+    setMode("preview");
   }
 
   async function addSubject() {
@@ -213,13 +218,31 @@ export default function StudyPlanPage() {
                   )}
                 </div>
 
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => setPreview((v) => !v)}
-                  >
-                    {preview ? "隐藏预览" : "显示预览"}
-                  </Button>
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="inline-flex overflow-hidden rounded-md border">
+                    <button
+                      type="button"
+                      onClick={() => setMode("edit")}
+                      className={
+                        mode === "edit"
+                          ? "bg-slate-900 px-3 py-1.5 text-sm font-medium text-white"
+                          : "bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
+                      }
+                    >
+                      编辑
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMode("preview")}
+                      className={
+                        mode === "preview"
+                          ? "bg-slate-900 px-3 py-1.5 text-sm font-medium text-white"
+                          : "bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
+                      }
+                    >
+                      预览
+                    </button>
+                  </div>
                   <Button
                     variant="outline"
                     onClick={remove}
@@ -237,25 +260,18 @@ export default function StudyPlanPage() {
                 </div>
               </div>
 
-              <div
-                className={
-                  preview
-                    ? "grid gap-4 md:grid-cols-2"
-                    : "grid gap-4"
-                }
-              >
-                <textarea
-                  value={draft}
-                  onChange={(e) => {
-                    setDraft(e.target.value);
-                    setDirty(true);
-                  }}
-                  spellCheck={false}
-                  className="min-h-[65vh] w-full resize-y rounded-lg border bg-slate-50 p-4 font-mono text-sm leading-relaxed text-slate-800 outline-none focus:border-slate-400"
-                  placeholder="用 Markdown 编写这门学科的学习计划..."
-                />
-
-                {preview && (
+              {mode === "edit" ? (
+                <div className="grid gap-4 md:grid-cols-2">
+                  <textarea
+                    value={draft}
+                    onChange={(e) => {
+                      setDraft(e.target.value);
+                      setDirty(true);
+                    }}
+                    spellCheck={false}
+                    className="min-h-[65vh] w-full resize-y rounded-lg border bg-slate-50 p-4 font-mono text-sm leading-relaxed text-slate-800 outline-none focus:border-slate-400"
+                    placeholder="用 Markdown 编写这门学科的学习计划..."
+                  />
                   <article className="prose prose-slate max-w-none rounded-lg border bg-white p-4">
                     {draft.trim() ? (
                       <ReactMarkdown remarkPlugins={[remarkGfm]}>
@@ -265,8 +281,18 @@ export default function StudyPlanPage() {
                       <p className="text-slate-400">预览将在这里显示。</p>
                     )}
                   </article>
-                )}
-              </div>
+                </div>
+              ) : (
+                <article className="prose prose-slate min-h-[65vh] max-w-none rounded-lg border bg-white p-6">
+                  {draft.trim() ? (
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {draft}
+                    </ReactMarkdown>
+                  ) : (
+                    <p className="text-slate-400">还没有内容，点“编辑”开始写。</p>
+                  )}
+                </article>
+              )}
             </>
           )}
         </section>
