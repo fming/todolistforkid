@@ -10,6 +10,8 @@ interface TaskListProps {
   tasks: Task[];
   /** When true, show per-task status pill (todo/pending/verified). */
   showStatus?: boolean;
+  /** When true, hide add/delete controls and render task fields as read-only. */
+  readOnly?: boolean;
   onAddTask: () => void;
   onUpdateTask: <K extends keyof Task>(
     id: string,
@@ -22,6 +24,7 @@ interface TaskListProps {
 export default function TaskList({
   tasks,
   showStatus = false,
+  readOnly = false,
   onAddTask,
   onUpdateTask,
   onDeleteTask,
@@ -36,18 +39,22 @@ export default function TaskList({
           </h2>
 
           <p className="mt-1 text-sm text-slate-500">
-            Build your daily learning plan.
+            {readOnly
+              ? "This is the live plan kids are working on."
+              : "Build your daily learning plan."}
           </p>
         </div>
 
-        <Button onClick={onAddTask}>
-          <Plus className="mr-2 h-4 w-4" />
-          Add Task
-        </Button>
+        {!readOnly && (
+          <Button onClick={onAddTask}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Task
+          </Button>
+        )}
       </div>
 
       {/* Empty state */}
-      {tasks.length === 0 && (
+      {tasks.length === 0 && !readOnly && (
         <div className="rounded-2xl border-2 border-dashed bg-white py-16 text-center">
           <p className="text-slate-500">
             No tasks yet. Start by adding one.
@@ -60,13 +67,19 @@ export default function TaskList({
         </div>
       )}
 
+      {tasks.length === 0 && readOnly && (
+        <div className="rounded-2xl border-2 border-dashed bg-white py-16 text-center">
+          <p className="text-slate-500">This plan has no tasks.</p>
+        </div>
+      )}
+
       {/* Task Cards */}
       <div className="space-y-5">
         {tasks.map((task) => (
           <TaskItem
             key={task.id}
             task={task}
-            editable={true}
+            editable={!readOnly}
             showStatus={showStatus}
             onChange={onUpdateTask}
             onDelete={onDeleteTask}
@@ -75,7 +88,7 @@ export default function TaskList({
       </div>
 
       {/* Footer hint */}
-      {tasks.length > 0 && (
+      {tasks.length > 0 && !readOnly && (
         <div className="text-center text-xs text-slate-400">
           Tip: Keep total difficulty balanced across the day
         </div>

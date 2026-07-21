@@ -1,31 +1,40 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import {
-  getPlan,
-  savePlan,
+  getPublishedPlan,
+  getDraft,
+  saveDraft,
+  discardDraft,
   submitTask,
   cancelSubmission,
 } from "@/services/planService";
-import type { DayPlan } from "@/types/day-plan";
+import type { Task } from "@/types/task";
 
 /**
- * GET /api/plan?date=2026-07-02&draft=1
+ * GET /api/plan?date=2026-07-02          → kid view: published plan only.
+ * GET /api/plan?date=2026-07-02&admin=1  → admin view: { published, draft }.
  *
- * Without `draft=1`, drafts are hidden from callers (kid view). When no plan
- * exists (or a draft is hidden), we return a stable empty shape so clients
- * don't need a 404 branch.
+ * Kid view returns a stable "empty" shape when there is no published plan,
+ * so callers don't need a 404 branch.
  */
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const date = searchParams.get("date");
-  const includeDraft = searchParams.get("draft") === "1";
+  const isAdmin = searchParams.get("admin") === "1";
 
   if (!date) {
     return NextResponse.json({ error: "Missing date" }, { status: 400 });
   }
 
-  const plan = await getPlan(date, { includeDraft });
+  if (isAdmin) {
+    const [published, draft] = await Promise.all([
+      getPublishedPlan(date),
+      getDraft(date),
+    ]);
+    return NextResponse.json({ date, published, draft });
+  }
 
+  const plan = await getPublishedPlan(date);
   if (!plan) {
     return NextResponse.json({
       date,
@@ -33,16 +42,17 @@ export async function GET(req: NextRequest) {
       tasks: [],
     });
   }
-
   return NextResponse.json(plan);
 }
 
 /**
- * POST /api/plan — save a plan (admin). New plans default to "draft".
+ * POST /api/plan — admin saves the draft for a date. Never touches the
+ * currently published plan.
+ * Body: { date, tasks }
  */
 export async function POST(req: NextRequest) {
   try {
-    const body = (await req.json()) as DayPlan;
+    const body = (await req.json()) as { date?: string; tasks?: Task[] };
 
     if (!body.date) {
       return NextResponse.json({ error: "Missing date" }, { status: 400 });
@@ -51,11 +61,25 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid tasks" }, { status: 400 });
     }
 
-    const saved = await savePlan(body);
+    const saved = await saveDraft(body.date, body.tasks);
     return NextResponse.json(saved);
   } catch {
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
+}
+
+/**
+ * DELETE /api/plan?date=YYYY-MM-DD — admin discards the draft for a date.
+ * The published plan is untouched.
+ */
+export async function DELETE(req: NextRequest) {
+  const { searchParams } = new URL(req.url);
+  const date = searchParams.get("date");
+  if (!date) {
+    return NextResponse.json({ error: "Missing date" }, { status: 400 });
+  }
+  const removed = await discardDraft(date);
+  return NextResponse.json({ removed });
 }
 
 /**

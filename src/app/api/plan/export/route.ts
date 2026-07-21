@@ -1,12 +1,13 @@
-import { listPlans } from "@/services/planService";
+import { listPublishedPlans } from "@/services/planService";
 import { todayInBeijing } from "@/lib/date";
 
 /**
- * GET /api/plan/export — download every plan (drafts + published) as a
- * JSON attachment for backup.
+ * GET /api/plan/export — download every published plan as a JSON
+ * attachment for backup. Drafts are per-admin scratch state and are
+ * intentionally excluded.
  */
 export async function GET() {
-  const plans = await listPlans({ includeDrafts: true });
+  const plans = await listPublishedPlans();
   const body = {
     exportedAt: new Date().toISOString(),
     version: 1,

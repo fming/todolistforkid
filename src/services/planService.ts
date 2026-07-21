@@ -3,13 +3,31 @@ import { shiftIsoDate } from "@/lib/date";
 import type { DayPlan, PlanStatus } from "@/types/day-plan";
 import type { Task, TaskStatus } from "@/types/task";
 
+/**
+ * Storage model
+ * -------------
+ *   plan:<date>         → the PUBLISHED plan for that date (or nothing).
+ *   plan:<date>:draft   → the admin's in-progress DRAFT (or nothing).
+ *
+ * The two never share a key, so saving a draft can never overwrite what the
+ * kids are seeing.
+ */
 const PLAN_PREFIX = "plan:";
+const DRAFT_SUFFIX = ":draft";
 
-function planKey(date: string): string {
+function publishedKey(date: string): string {
   return `${PLAN_PREFIX}${date}`;
 }
 
-/** Bring one task up to the current schema (adds `status`, mirrors `completed`). */
+function draftKey(date: string): string {
+  return `${PLAN_PREFIX}${date}${DRAFT_SUFFIX}`;
+}
+
+function isDraftKey(key: string): boolean {
+  return key.endsWith(DRAFT_SUFFIX);
+}
+
+/** Bring one task up to the current schema. */
 function normalizeTask(raw: Task): Task {
   const status: TaskStatus =
     (raw.status as TaskStatus | undefined) ?? (raw.completed ? "verified" : "todo");
@@ -20,77 +38,132 @@ function normalizeTask(raw: Task): Task {
   };
 }
 
+type RawPlan = Partial<DayPlan> & { date: string; tasks: Task[] };
+
 /** Normalize legacy shapes so old rows keep working. */
-function normalize(raw: Partial<DayPlan> & { date: string; tasks: Task[] }): DayPlan {
+function normalize(raw: RawPlan, fallbackStatus: PlanStatus): DayPlan {
   return {
     date: raw.date,
     tasks: (raw.tasks ?? []).map(normalizeTask),
-    status: (raw.status as PlanStatus | undefined) ?? "published",
+    status: (raw.status as PlanStatus | undefined) ?? fallbackStatus,
     updatedAt: raw.updatedAt ?? new Date(0).toISOString(),
     publishedAt: raw.publishedAt,
   };
 }
 
-/**
- * Read a plan. When `includeDraft` is false (kid view), drafts return `null`.
- */
-export async function getPlan(
-  date: string,
-  opts: { includeDraft?: boolean } = {}
-): Promise<DayPlan | null> {
-  const raw = await redis.get<Partial<DayPlan> & { date: string; tasks: Task[] }>(
-    planKey(date)
-  );
+/** Read the published plan for a date, or null if none exists. */
+export async function getPublishedPlan(date: string): Promise<DayPlan | null> {
+  const raw = await redis.get<RawPlan>(publishedKey(date));
   if (!raw) return null;
-
-  const plan = normalize(raw);
-  if (!opts.includeDraft && plan.status === "draft") return null;
+  const plan = normalize(raw, "published");
+  // Defensive: legacy rows written before the split may still be flagged
+  // "draft" while sitting at the published key. Ignore them.
+  if (plan.status !== "published") return null;
   return plan;
 }
 
-export async function savePlan(plan: DayPlan): Promise<DayPlan> {
-  const existing = await redis.get<Partial<DayPlan>>(planKey(plan.date));
-
-  const next: DayPlan = {
-    date: plan.date,
-    tasks: plan.tasks,
-    status: plan.status ?? (existing?.status as PlanStatus | undefined) ?? "draft",
-    updatedAt: new Date().toISOString(),
-    publishedAt: plan.publishedAt ?? existing?.publishedAt,
-  };
-
-  await redis.set(planKey(plan.date), next);
-  return next;
-}
-
-export async function publishPlan(date: string): Promise<DayPlan | null> {
-  const plan = await getPlan(date, { includeDraft: true });
-  if (!plan) return null;
-
-  return savePlan({
-    ...plan,
-    status: "published",
-    publishedAt: new Date().toISOString(),
-  });
-}
-
-export async function unpublishPlan(date: string): Promise<DayPlan | null> {
-  const plan = await getPlan(date, { includeDraft: true });
-  if (!plan) return null;
-
-  return savePlan({ ...plan, status: "draft" });
+/** Read the draft for a date, or null if none exists. */
+export async function getDraft(date: string): Promise<DayPlan | null> {
+  const raw = await redis.get<RawPlan>(draftKey(date));
+  if (!raw) return null;
+  return normalize(raw, "draft");
 }
 
 /**
- * Apply a per-task update on a published plan. Kids can't touch drafts.
- * Returns the updated plan or `null` if plan/task not found or transition illegal.
+ * Save the admin's draft for a date. Never touches the published key, so the
+ * currently-live plan (and any pending/verified state on its tasks) is safe.
  */
-async function mutateTask(
+export async function saveDraft(date: string, tasks: Task[]): Promise<DayPlan> {
+  const next: DayPlan = {
+    date,
+    tasks: tasks.map(normalizeTask),
+    status: "draft",
+    updatedAt: new Date().toISOString(),
+  };
+  await redis.set(draftKey(date), next);
+  return next;
+}
+
+/** Delete the draft for a date, if any. Does not touch the published plan. */
+export async function discardDraft(date: string): Promise<boolean> {
+  const removed = await redis.del(draftKey(date));
+  return removed > 0;
+}
+
+/**
+ * Promote the current draft to published. Overwrites any existing published
+ * plan for that date (that is the intent — publish replaces live). The draft
+ * key is cleared once promotion succeeds.
+ *
+ * Returns the newly published plan, or null if there is no draft to publish.
+ */
+export async function publishDraft(date: string): Promise<DayPlan | null> {
+  const draft = await getDraft(date);
+  if (!draft) return null;
+
+  // Reset any per-task runtime state that might have been carried into the
+  // draft (e.g. copied from a previous day). A freshly published plan should
+  // always start in "todo".
+  const cleanTasks: Task[] = draft.tasks.map((t) => ({
+    ...t,
+    status: "todo",
+    completed: false,
+    submittedAt: undefined,
+    verifiedAt: undefined,
+    adminComment: undefined,
+  }));
+
+  const now = new Date().toISOString();
+  const next: DayPlan = {
+    date,
+    tasks: cleanTasks,
+    status: "published",
+    updatedAt: now,
+    publishedAt: now,
+  };
+
+  await redis.set(publishedKey(date), next);
+  await redis.del(draftKey(date));
+  return next;
+}
+
+/**
+ * Move the currently published plan back into draft. Refuses to overwrite an
+ * existing draft — the caller must discard it first.
+ */
+export async function unpublishPlan(
+  date: string
+): Promise<
+  | { ok: true; plan: DayPlan }
+  | { ok: false; reason: "not-published" | "draft-exists" }
+> {
+  const published = await getPublishedPlan(date);
+  if (!published) return { ok: false, reason: "not-published" };
+
+  const existingDraft = await getDraft(date);
+  if (existingDraft) return { ok: false, reason: "draft-exists" };
+
+  const draft: DayPlan = {
+    date,
+    tasks: published.tasks,
+    status: "draft",
+    updatedAt: new Date().toISOString(),
+  };
+  await redis.set(draftKey(date), draft);
+  await redis.del(publishedKey(date));
+  return { ok: true, plan: draft };
+}
+
+/**
+ * Apply a per-task update on the published plan.
+ * Returns the updated plan or null if plan/task not found or transition illegal.
+ */
+async function mutatePublishedTask(
   date: string,
   taskId: string,
   apply: (t: Task) => Task | null
 ): Promise<DayPlan | null> {
-  const plan = await getPlan(date, { includeDraft: false });
+  const plan = await getPublishedPlan(date);
   if (!plan) return null;
 
   const idx = plan.tasks.findIndex((t) => t.id === taskId);
@@ -101,7 +174,14 @@ async function mutateTask(
 
   const nextTasks = plan.tasks.slice();
   nextTasks[idx] = next;
-  return savePlan({ ...plan, tasks: nextTasks });
+
+  const updated: DayPlan = {
+    ...plan,
+    tasks: nextTasks,
+    updatedAt: new Date().toISOString(),
+  };
+  await redis.set(publishedKey(date), updated);
+  return updated;
 }
 
 /** Kid submits a task: todo → pending. */
@@ -109,7 +189,7 @@ export async function submitTask(
   date: string,
   taskId: string
 ): Promise<DayPlan | null> {
-  return mutateTask(date, taskId, (t) => {
+  return mutatePublishedTask(date, taskId, (t) => {
     if (t.status !== "todo") return null;
     return {
       ...t,
@@ -125,7 +205,7 @@ export async function cancelSubmission(
   date: string,
   taskId: string
 ): Promise<DayPlan | null> {
-  return mutateTask(date, taskId, (t) => {
+  return mutatePublishedTask(date, taskId, (t) => {
     if (t.status !== "pending") return null;
     return {
       ...t,
@@ -143,7 +223,7 @@ export async function verifyTask(
   decision: "approve" | "reject",
   comment?: string
 ): Promise<DayPlan | null> {
-  return mutateTask(date, taskId, (t) => {
+  return mutatePublishedTask(date, taskId, (t) => {
     if (t.status !== "pending") return null;
     const trimmed = comment?.trim().slice(0, 500) || undefined;
     if (decision === "approve") {
@@ -167,36 +247,31 @@ export async function verifyTask(
 }
 
 /**
- * List plans, newest first. Kid-facing views should pass `includeDrafts: false`.
+ * List published plans, newest first. Drafts are per-admin scratch state and
+ * intentionally excluded from history/export.
  */
-export async function listPlans(
-  opts: { includeDrafts?: boolean } = {}
-): Promise<DayPlan[]> {
-  const keys = await scanKeys(`${PLAN_PREFIX}*`);
+export async function listPublishedPlans(): Promise<DayPlan[]> {
+  const keys = (await scanKeys(`${PLAN_PREFIX}*`)).filter((k) => !isDraftKey(k));
   if (keys.length === 0) return [];
 
-  const rows = await Promise.all(
-    keys.map((k) =>
-      redis.get<Partial<DayPlan> & { date: string; tasks: Task[] }>(k)
-    )
-  );
+  const rows = await Promise.all(keys.map((k) => redis.get<RawPlan>(k)));
 
   const plans = rows
-    .filter((r): r is Partial<DayPlan> & { date: string; tasks: Task[] } => r !== null)
-    .map(normalize)
-    .filter((p) => opts.includeDrafts || p.status === "published");
+    .filter((r): r is RawPlan => r !== null)
+    .map((r) => normalize(r, "published"))
+    .filter((p) => p.status === "published");
 
   return plans.sort((a, b) => (a.date < b.date ? 1 : -1));
 }
 
 /**
  * Yesterday relative to `date` (YYYY-MM-DD). Returns tasks reset to a fresh
- * "todo" state so the caller doesn't have to clean them up.
+ * "todo" state. Prefers the published plan; falls back to the draft.
  */
 export async function getYesterdayTasks(date: string): Promise<Task[] | null> {
   const yesterday = shiftIsoDate(date, -1);
-
-  const plan = await getPlan(yesterday, { includeDraft: true });
+  const plan =
+    (await getPublishedPlan(yesterday)) ?? (await getDraft(yesterday));
   if (!plan) return null;
 
   return plan.tasks.map((t) => ({
@@ -210,7 +285,7 @@ export async function getYesterdayTasks(date: string): Promise<Task[] | null> {
 }
 
 /**
- * Delete every plan key. Used by admin "Clear all history".
+ * Delete every plan key (published + drafts). Used by admin "Clear all history".
  */
 export async function clearAllPlans(): Promise<number> {
   const keys = await scanKeys(`${PLAN_PREFIX}*`);

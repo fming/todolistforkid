@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { publishPlan, unpublishPlan } from "@/services/planService";
+import { publishDraft, unpublishPlan } from "@/services/planService";
 
 /**
- * POST /api/plan/publish  body: { date }
- * DELETE /api/plan/publish body: { date }  (unpublish)
+ * POST /api/plan/publish   body: { date }
+ *   Promotes the current draft to published. Overwrites any existing
+ *   published plan for that date and clears the draft.
+ *
+ * DELETE /api/plan/publish body: { date }
+ *   Unpublish: moves the current published plan back into the draft slot.
+ *   Refuses (409) if a draft already exists — the admin must discard the
+ *   draft first, otherwise the WIP would be lost.
  */
 export async function POST(req: NextRequest) {
   try {
@@ -13,9 +19,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing date" }, { status: 400 });
     }
 
-    const plan = await publishPlan(date);
+    const plan = await publishDraft(date);
     if (!plan) {
-      return NextResponse.json({ error: "Plan not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: "No draft to publish for this date." },
+        { status: 404 }
+      );
     }
     return NextResponse.json(plan);
   } catch {
@@ -30,11 +39,24 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: "Missing date" }, { status: 400 });
     }
 
-    const plan = await unpublishPlan(date);
-    if (!plan) {
-      return NextResponse.json({ error: "Plan not found" }, { status: 404 });
+    const result = await unpublishPlan(date);
+    if (!result.ok) {
+      if (result.reason === "not-published") {
+        return NextResponse.json(
+          { error: "No published plan for this date." },
+          { status: 404 }
+        );
+      }
+      return NextResponse.json(
+        {
+          error:
+            "A draft already exists for this date. Discard the draft first.",
+          reason: "draft-exists",
+        },
+        { status: 409 }
+      );
     }
-    return NextResponse.json(plan);
+    return NextResponse.json(result.plan);
   } catch {
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }

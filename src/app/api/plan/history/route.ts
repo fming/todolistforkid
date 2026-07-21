@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 
-import { clearAllPlans, listPlans } from "@/services/planService";
+import { clearAllPlans, listPublishedPlans } from "@/services/planService";
 
 /**
  * GET /api/plan/history — published plans, newest first.
  */
 export async function GET() {
-  const plans = await listPlans({ includeDrafts: false });
+  const plans = await listPublishedPlans();
   return NextResponse.json(plans);
 }
 
