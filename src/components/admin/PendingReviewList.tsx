@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 import { Button } from "@/components/ui/button";
 import { CATEGORY_EMOJI, VERIFY_TAGS } from "@/lib/constants";
@@ -108,10 +110,14 @@ function PendingCard({ task, date, onDecided, onError }: PendingCardProps) {
             )}
           </p>
           {task.note && (
-            <p className="mt-2 whitespace-pre-line rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-700">
-              <span className="mr-1 font-medium text-slate-500">Details:</span>
-              {task.note}
-            </p>
+            <div className="mt-2 rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-700">
+              <p className="mb-1 font-medium text-slate-500">Details</p>
+              <article className="prose prose-sm max-w-none prose-p:my-1">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {task.note}
+                </ReactMarkdown>
+              </article>
+            </div>
           )}
         </div>
       </div>
@@ -130,14 +136,26 @@ function PendingCard({ task, date, onDecided, onError }: PendingCardProps) {
         ))}
       </div>
 
-      <textarea
-        value={comment}
-        onChange={(e) => setComment(e.target.value)}
-        placeholder="Add feedback (optional)..."
-        rows={2}
-        disabled={busy}
-        className="w-full resize-y rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-slate-500 focus:ring-2 focus:ring-slate-200 disabled:opacity-50"
-      />
+      <div className="grid gap-2 md:grid-cols-2">
+        <textarea
+          value={comment}
+          onChange={(e) => setComment(e.target.value)}
+          placeholder="评语支持 Markdown：**加粗**、- 列表、[链接](url)..."
+          rows={3}
+          disabled={busy}
+          spellCheck={false}
+          className="w-full resize-y rounded-md border border-slate-300 bg-white px-3 py-2 font-mono text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-slate-500 focus:ring-2 focus:ring-slate-200 disabled:opacity-50"
+        />
+        <article className="prose prose-sm max-w-none rounded-md border bg-slate-50 px-3 py-2 prose-p:my-1">
+          {comment.trim() ? (
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {comment}
+            </ReactMarkdown>
+          ) : (
+            <p className="italic text-slate-400">预览会显示在这里…</p>
+          )}
+        </article>
+      </div>
 
       <div className="mt-3 flex flex-wrap justify-end gap-2">
         <Button

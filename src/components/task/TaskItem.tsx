@@ -1,6 +1,8 @@
 "use client";
 
 import { Trash2 } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -187,22 +189,41 @@ export default function TaskItem({
       {/* Details / note */}
       <div className="mt-5">
         <label className="mb-2 block text-sm text-slate-600">
-          Details
+          Details{" "}
+          <span className="text-xs text-slate-400">
+            (Markdown supported)
+          </span>
         </label>
         {editable ? (
-          <textarea
-            value={task.note}
-            placeholder="Describe the task (pages, chapter, focus points)..."
-            rows={3}
-            onChange={(e) =>
-              onChange(task.id, "note", e.target.value)
-            }
-            className="w-full resize-y rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
-          />
+          <div className="grid gap-3 md:grid-cols-2">
+            <textarea
+              value={task.note}
+              placeholder="Describe the task. Markdown supported: **bold**, - list, [link](url)..."
+              rows={6}
+              onChange={(e) =>
+                onChange(task.id, "note", e.target.value)
+              }
+              spellCheck={false}
+              className="w-full resize-y rounded-md border border-slate-300 bg-white px-3 py-2 font-mono text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
+            />
+            <article className="prose prose-sm max-w-none rounded-md border bg-slate-50 px-3 py-2">
+              {task.note?.trim() ? (
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {task.note}
+                </ReactMarkdown>
+              ) : (
+                <p className="italic text-slate-400">
+                  Preview will appear here.
+                </p>
+              )}
+            </article>
+          </div>
         ) : task.note ? (
-          <p className="whitespace-pre-line rounded-md border bg-slate-50 px-3 py-2 text-sm text-slate-700">
-            {task.note}
-          </p>
+          <article className="prose prose-sm max-w-none rounded-md border bg-slate-50 px-3 py-2 text-slate-700">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {task.note}
+            </ReactMarkdown>
+          </article>
         ) : (
           <p className="rounded-md border bg-slate-50 px-3 py-2 text-sm italic text-slate-400">
             No details

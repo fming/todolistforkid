@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 import KidTaskGrid from "@/components/task/KidTaskGrid";
 import type { KidAction } from "@/components/task/KidTaskCard";
@@ -254,8 +256,12 @@ export default function KidHome() {
               )}
               {toast.comment && (
                 <div className="mt-4 rounded-xl bg-emerald-100 px-4 py-3 text-left text-base text-emerald-900">
-                  <span className="mr-1 font-medium">👨‍👩‍👧 家长评语:</span>
-                  {toast.comment}
+                  <p className="mb-1 font-medium">👨‍👩‍👧 家长评语</p>
+                  <article className="prose prose-base max-w-none prose-p:my-1">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {toast.comment}
+                    </ReactMarkdown>
+                  </article>
                 </div>
               )}
               <p className="mt-4 text-xs text-slate-400">tap to close</p>

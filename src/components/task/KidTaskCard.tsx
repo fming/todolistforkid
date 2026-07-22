@@ -1,6 +1,8 @@
 "use client";
 
 import { Check, Clock, Undo2 } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 import {
   Card,
@@ -67,9 +69,11 @@ export default function KidTaskCard({ task, onAction }: KidTaskCardProps) {
           </span>
         )}
         {task.note && (
-          <p className="mt-2 w-full whitespace-pre-line text-slate-500">
-            {task.note}
-          </p>
+          <article className="prose prose-sm mt-2 w-full max-w-none text-slate-500 prose-p:my-1">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {task.note}
+            </ReactMarkdown>
+          </article>
         )}
         {task.adminComment && (
           <div
@@ -80,10 +84,14 @@ export default function KidTaskCard({ task, onAction }: KidTaskCardProps) {
                 : "bg-rose-50 text-rose-900 ring-1 ring-rose-200"
             )}
           >
-            <span className="mr-1 font-medium">
-              {status === "verified" ? "👨‍👩‍👧 家长评语:" : "↩ 需要重做:"}
-            </span>
-            {task.adminComment}
+            <p className="mb-1 font-medium">
+              {status === "verified" ? "👨‍👩‍👧 家长评语" : "↩ 需要重做"}
+            </p>
+            <article className="prose prose-sm max-w-none prose-p:my-1">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {task.adminComment}
+              </ReactMarkdown>
+            </article>
           </div>
         )}
       </CardContent>
